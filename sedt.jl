@@ -1,3 +1,11 @@
+# Copyright 2015 The Australian National University
+#
+# Performs a signed Euclidean distance transform on an array of arbitrary
+# dimension using the Hirata/Meijster algorithm.
+#
+# Olaf Delgado-Friedrichs dec 15
+
+
 function init{T <: Real}(a::Array{T, 1})
     n = size(a)[1]
 
