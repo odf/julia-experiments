@@ -1,5 +1,5 @@
-positives{T <: Number}(a::Array{T}) = map(x -> max(x, zero(T)), a)
-negatives{T <: Number}(a::Array{T}) = map(x -> max(-x, zero(T)), a)
+positives{T <: Number}(a::AbstractArray{T}) = map(x -> max(x, zero(T)), a)
+negatives{T <: Number}(a::AbstractArray{T}) = map(x -> max(-x, zero(T)), a)
 
 
 combine{T <: Number}(neg::Array{T}, pos::Array{T}) = pos - neg
@@ -69,33 +69,37 @@ function propagate{T <: Real}(a::Array{T, 1})
 end
 
 
-function compute{T}(input::Array{T}, inside = x -> x > zero(T))
-    output = Array(Float64, size(input)...)
-    (xd, yd, zd) = size(input)
+function adjust{T <: Real, n}(a::AbstractArray{T, n})
+    d = size(a)[1]
+    out = zeros(Float64, size(a)...)
 
-    for y in 1:yd
-        for z in 1:zd
-            a = input[:,y,z]
-            output[:,y,z] = combine(init(map(x -> !inside(x), a)),
-                                    init(map(inside, a)))
-        end
+    for i in 1:d
+        idcs = map(k -> k == 1 ? i : Colon(), 1:n)
+        out[idcs...] = adjust(slice(a, idcs...))
     end
 
-    for x in 1:xd
-        for z in 1:zd
-            a = vec(output[x,:,z])
-            output[x,:,z] = combine(propagate(negatives(a)),
-                                    propagate(positives(a)))
-        end
+    return out
+end
+
+
+function adjust{T <: Real}(a::AbstractArray{T, 1})
+    return combine(propagate(negatives(a)), propagate(positives(a)));
+end
+
+
+function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
+    d = size(a)[end]
+    out = zeros(Float64, size(a)...)
+
+    for i in 1:d
+        idcs = map(k -> k == n ? i : Colon(), 1:n)
+        out[idcs...] = compute(a[idcs...], inside)
     end
 
-    for x in 1:xd
-        for y in 1:yd
-            a = vec(output[x,y,:])
-            output[x,y,:] = combine(propagate(negatives(a)),
-                                    propagate(positives(a)))
-        end
-    end
+    return adjust(out)
+end
 
-    return output
+
+function compute{T}(a::Array{T, 1}, inside = x -> x > zero(T))
+    return combine(init(map(x -> !inside(x), a)), init(map(inside, a)))
 end
