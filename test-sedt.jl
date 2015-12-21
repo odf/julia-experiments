@@ -9,3 +9,6 @@ A = reshape([
              ],
             5, 5, 5)
 println(compute(A))
+
+A = reshape([0,0,0,0,0, 0,1,1,1,0, 0,1,1,1,0, 0,1,1,1,0, 0,0,0,0,0], 5, 5)
+println(compute(A))

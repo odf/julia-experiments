@@ -1,11 +1,11 @@
-function init(a::Array{Bool, 1})
+function init{T <: Real}(a::Array{T, 1})
     n = size(a)[1]
 
-    out = zeros(Float64, n)
-    a[1] && (out[1] = n)
+    out = zeros(T, n)
+    a[1] > 0.0 && (out[1] = n)
 
     for i in 2:n
-        a[i] && (out[i] = 1 + out[i - 1])
+        a[i] > 0.0 && (out[i] = 1 + out[i - 1])
     end
 
     for i in n-1:-1:1
@@ -62,38 +62,42 @@ function propagate{T <: Real}(a::Array{T, 1})
 end
 
 
-function adjust{T <: Real, n}(a::AbstractArray{T, n})
+function adjust!{T <: Real, n}(a::AbstractArray{T, n})
     d = size(a)[1]
-    out = zeros(Float64, size(a)...)
 
     for i in 1:d
         idcs = map(k -> k == 1 ? i : Colon(), 1:n)
-        out[idcs...] = adjust(slice(a, idcs...))
+        adjust!(slice(a, idcs...))
     end
-
-    return out
 end
 
 
-function adjust{T <: Real}(a::AbstractArray{T, 1})
-    return (propagate(map(x -> max( x, zero(T)), a)) -
+function adjust!{T <: Real}(a::AbstractArray{T, 1})
+    a[:] = (propagate(map(x -> max( x, zero(T)), a)) -
             propagate(map(x -> max(-x, zero(T)), a)))
 end
 
 
-function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
+function compute!{T <: Real, n}(a::AbstractArray{T, n})
     d = size(a)[end]
-    out = zeros(Float64, size(a)...)
 
     for i in 1:d
         idcs = map(k -> k == n ? i : Colon(), 1:n)
-        out[idcs...] = compute(a[idcs...], inside)
+        compute!(slice(a, idcs...))
     end
 
-    return adjust(out)
+    adjust!(a)
 end
 
 
-function compute{T}(a::Array{T, 1}, inside = x -> x > zero(T))
-    return init(map(inside, a)) - init(map(x -> !inside(x), a))
+function compute!{T <: Real}(a::AbstractArray{T, 1})
+    a[:] = (init(map(x -> max( x, zero(T)), a)) -
+            init(map(x -> max(-x, zero(T)), a)))
+end
+
+
+function compute{T}(a::Array{T}, inside = x -> x > zero(T))
+    out = map(x -> inside(x) ? 1.0 : -1.0, a)
+    compute!(out)
+    return out
 end
