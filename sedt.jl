@@ -1,10 +1,3 @@
-positives{T <: Number}(a::AbstractArray{T}) = map(x -> max(x, zero(T)), a)
-negatives{T <: Number}(a::AbstractArray{T}) = map(x -> max(-x, zero(T)), a)
-
-
-combine{T <: Number}(neg::Array{T}, pos::Array{T}) = pos - neg
-
-
 function init(a::Array{Bool, 1})
     n = size(a)[1]
 
@@ -83,7 +76,8 @@ end
 
 
 function adjust{T <: Real}(a::AbstractArray{T, 1})
-    return combine(propagate(negatives(a)), propagate(positives(a)));
+    return (propagate(map(x -> max( x, zero(T)), a)) -
+            propagate(map(x -> max(-x, zero(T)), a)))
 end
 
 
@@ -101,5 +95,5 @@ end
 
 
 function compute{T}(a::Array{T, 1}, inside = x -> x > zero(T))
-    return combine(init(map(x -> !inside(x), a)), init(map(inside, a)))
+    return init(map(inside, a)) - init(map(x -> !inside(x), a))
 end
