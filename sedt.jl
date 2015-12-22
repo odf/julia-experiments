@@ -6,6 +6,9 @@
 # Olaf Delgado-Friedrichs dec 15
 
 
+import Iterators
+
+
 function init{T <: Real}(a::Array{T, 1})
     n = size(a)[1]
 
@@ -70,43 +73,34 @@ function propagate{T <: Real}(a::Array{T, 1})
 end
 
 
-function adjust!{T <: Real, n}(a::AbstractArray{T, n})
-    d = size(a)[1]
+function slivers(a::Array, k::Int)
+    dims = size(a)
+    idcs = map(i -> i == k ? 0 : 1:dims[i], 1:length(dims))
+    iter = Iterators.product(idcs...)
+    fix  = k -> k == 0 ? Colon() : k
 
-    for i in 1:d
-        idcs = map(k -> k == 1 ? i : Colon(), 1:n)
-        adjust!(slice(a, idcs...))
-    end
+    return Iterators.imap(i -> map(fix, i), iter)
 end
 
 
-function adjust!{T <: Real}(a::AbstractArray{T, 1})
-    a[:] = (propagate(map(x -> max( x, zero(T)), a)) -
-            propagate(map(x -> max(-x, zero(T)), a)))
+function apply{T}(f::Function, a::Array{T})
+    z = zero(T)
+    return f(map(x -> max(x, z), a)) - f(map(x -> max(-x, z), a))
 end
 
 
-function compute!{T <: Real, n}(a::AbstractArray{T, n})
-    d = size(a)[end]
-
-    for i in 1:d
-        idcs = map(k -> k == n ? i : Colon(), 1:n)
-        compute!(slice(a, idcs...))
-    end
-
-    adjust!(a)
-end
-
-
-function compute!{T <: Real}(a::AbstractArray{T, 1})
-    a[:] = (init(map(x -> max( x, zero(T)), a)) -
-            init(map(x -> max(-x, zero(T)), a)))
-end
-
-
-function compute{T}(a::Array{T}, inside = x -> x > zero(T))
+function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
     out = map(x -> inside(x) ? 1.0 : -1.0, a)
-    compute!(out)
+
+    for idcs in slivers(out, 1)
+        out[idcs...] = apply(init, vec(out[idcs...]))
+    end
+
+    for k in 2:n
+        for idcs in slivers(out, k)
+            out[idcs...] = apply(propagate, vec(out[idcs...]))
+        end
+    end
 
     for i in eachindex(out)
         if out[i] > 0
