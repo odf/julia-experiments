@@ -107,5 +107,14 @@ end
 function compute{T}(a::Array{T}, inside = x -> x > zero(T))
     out = map(x -> inside(x) ? 1.0 : -1.0, a)
     compute!(out)
+
+    for i in eachindex(out)
+        if out[i] > 0
+            out[i] -= 0.5
+        elseif out[i] < 0
+            out[i] += 0.5
+        end
+    end
+
     return out
 end
