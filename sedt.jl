@@ -31,17 +31,16 @@ function propagate{T <: Real}(a::Array{T, 1})
     m = size(a)[1]
     m <= 1 && return a
 
-    g(i::Int) = a[i + 1]
-    f(u, i::Int) = (u - i)^2 + g(i)^2
+    f(u, i::Int) = (u - i)^2 + a[i]^2
 
     q = 1
     s = zeros(Int64, m)
     t = zeros(T, m)
 
-    s[q] = 0
+    s[q] = 1
     t[q] = 0
 
-    for u in 1:m-1
+    for u in 2:m
         while q > 0 && f(t[q], s[q]) > f(t[q], u)
             q -= 1
         end
@@ -52,7 +51,7 @@ function propagate{T <: Real}(a::Array{T, 1})
             t[q] = 0
         else
             i = s[q]
-            w = (u^2 - i^2 + g(u)^2 - g(i)^2) / 2(u - i)
+            w = (u^2 - i^2 + a[u]^2 - a[i]^2) / 2(u - i)
             if w < m
                 q += 1
                 s[q] = u
@@ -63,10 +62,10 @@ function propagate{T <: Real}(a::Array{T, 1})
 
     result = zeros(T, m)
     for u in m:-1:1
-        while q > 1 && u - 1 < t[q]
+        while q > 1 && u < t[q]
             q -= 1
         end
-        result[u] = sqrt(f(u - 1, s[q]))
+        result[u] = sqrt(f(u, s[q]))
     end
 
     return result
