@@ -6,9 +6,6 @@
 # Olaf Delgado-Friedrichs dec 15
 
 
-import Iterators
-
-
 function init{T <: Real}(a::Array{T, 1})
     n = size(a)[1]
 
@@ -75,14 +72,50 @@ function propagate{T <: Real}(a::Array{T, 1})
 end
 
 
-function slivers(a::Array, k::Int)
-    dims = size(a)
-    idcs = map(i -> i == k ? 0 : 1:dims[i], 1:length(dims))
-    iter = Iterators.product(idcs...)
-    fix  = k -> k == 0 ? Colon() : k
-
-    return Iterators.imap(i -> map(fix, i), iter)
+immutable Slivers
+    dims::Array{Int64,1}
+    k::Int64
 end
+
+
+function Base.start(it::Slivers)
+    state = ones(Int64, length(it.dims))
+    state[it.k] = 0
+    return state
+end
+
+
+function Base.next(it::Slivers, state::Array{Int64, 1})
+    n = length(it.dims)
+
+    i = n
+    while i > 0 && (i == it.k || state[i] == it.dims[i])
+        i -= 1
+    end
+
+    if i == 0
+        newState = Int64[]
+    else
+        newState = copy(state)
+        newState[i] += 1
+
+        for j in i+1:n
+            if j != it.k
+                newState[j] = 1
+            end
+        end
+    end
+
+    return (map(x -> x == 0 ? Colon() : x, state), newState)
+end
+
+
+function Base.done(it::Slivers, state::Array{Int64, 1})
+    return length(state) == 0
+end
+
+
+slivers(a::Array, k::Int) = Slivers(collect(size(a)), k)
 
 
 function go{T}(f::Function, a::Array{T})
