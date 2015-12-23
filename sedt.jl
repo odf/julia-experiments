@@ -118,10 +118,10 @@ end
 slivers(a::Array, k::Int) = Slivers(collect(size(a)), k)
 
 
-function go{T}(f::Function, a::Array{T})
-    z = zero(T)
-    return f(map(x -> max(x, z), a)) - f(map(x -> max(-x, z), a))
-end
+pos(x) = max( x, zero(typeof(x)))
+neg(x) = max(-x, zero(typeof(x)))
+
+go(f::Function, a::Array) = f(map(pos, a)) - f(map(neg, a))
 
 
 function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
