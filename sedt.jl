@@ -119,6 +119,8 @@ slivers(a::Array, k::Int) = Slivers(collect(size(a)), k)
 
 go{T}(f::Function, a::Array{T}) = f(max(a, zero(T))) - f(max(-a, zero(T)))
 
+adjust(x) = x > 0 ? x - 0.5 : x < 0 ? x + 0.5 : x
+
 
 function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
     out = map(x -> inside(x) ? 1.0 : -1.0, a)
@@ -133,13 +135,5 @@ function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
         end
     end
 
-    for i in eachindex(out)
-        if out[i] > 0
-            out[i] -= 0.5
-        elseif out[i] < 0
-            out[i] += 0.5
-        end
-    end
-
-    return out
+    return map(adjust, out)
 end
