@@ -82,7 +82,7 @@ function slivers(a::Array, k::Int)
 end
 
 
-function apply{T}(f::Function, a::Array{T})
+function go{T}(f::Function, a::Array{T})
     z = zero(T)
     return f(map(x -> max(x, z), a)) - f(map(x -> max(-x, z), a))
 end
@@ -92,12 +92,12 @@ function compute{T, n}(a::Array{T, n}, inside = x -> x > zero(T))
     out = map(x -> inside(x) ? 1.0 : -1.0, a)
 
     for idcs in slivers(out, 1)
-        out[idcs...] = apply(init, vec(out[idcs...]))
+        out[idcs...] = go(init, vec(out[idcs...]))
     end
 
     for k in 2:n
         for idcs in slivers(out, k)
-            out[idcs...] = apply(propagate, vec(out[idcs...]))
+            out[idcs...] = go(propagate, vec(out[idcs...]))
         end
     end
 
