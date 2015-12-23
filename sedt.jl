@@ -27,11 +27,14 @@ function init{T <: Real}(a::Array{T, 1})
 end
 
 
+function f{T}(a::Array{T, 1}, u, i)
+    return (u - i)^2 + a[i]^2
+end
+
+
 function propagate{T <: Real}(a::Array{T, 1})
     m = size(a)[1]
     m <= 1 && return a
-
-    f(u, i::Int) = (u - i)^2 + a[i]^2
 
     q = 1
     s = zeros(Int64, m)
@@ -41,7 +44,7 @@ function propagate{T <: Real}(a::Array{T, 1})
     t[q] = 0
 
     for u in 2:m
-        while q > 0 && f(t[q], s[q]) > f(t[q], u)
+        while q > 0 && f(a, t[q], s[q]) > f(a, t[q], u)
             q -= 1
         end
 
@@ -65,7 +68,7 @@ function propagate{T <: Real}(a::Array{T, 1})
         while q > 1 && u < t[q]
             q -= 1
         end
-        result[u] = sqrt(f(u, s[q]))
+        result[u] = sqrt(f(a, u, s[q]))
     end
 
     return result
